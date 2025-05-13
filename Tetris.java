@@ -1,4 +1,3 @@
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -12,7 +11,7 @@ public class Tetris extends JPanel implements ActionListener {
     private int level = 1;
     private int score = 0;
     private int highScore = 0;
-    private final Font font = new Font("Arial", Font.BOLD, 18);
+    private final Font font = new Font("SansSerif", Font.BOLD, 18);
 
     private Timer timer;
     private int delay;
@@ -32,19 +31,17 @@ public class Tetris extends JPanel implements ActionListener {
     private int[][] shape, nextShape;
     private int shapeX, shapeY, shapeType, nextType, holdType = -1;
     private boolean canHold = true;
-    
+
     public Tetris(int cols, int blockSize, int delay, int scoreMultiplier) {
         this.COLS = cols;
         this.BLOCK = blockSize;
         this.delay = delay;
         this.scoreMultiplier = scoreMultiplier;
-    
 
         board = new int[ROWS][COLS];
         setPreferredSize(new Dimension(COLS * BLOCK + 150, ROWS * BLOCK));
         setBackground(Color.black);
         setFocusable(true);
-
         loadHighScore();
 
         addKeyListener(new KeyAdapter() {
@@ -191,7 +188,6 @@ public class Tetris extends JPanel implements ActionListener {
             case 4 -> 800;
             default -> 0;
         } * level * scoreMultiplier;
-        
     }
 
     void pause() {
@@ -199,68 +195,84 @@ public class Tetris extends JPanel implements ActionListener {
         else timer.start();
     }
 
+    private void drawBlock(Graphics2D g, int x, int y, Color color) {
+        GradientPaint gradient = new GradientPaint(x, y, color.brighter(), x + BLOCK, y + BLOCK, color.darker());
+        g.setPaint(gradient);
+        g.fillRoundRect(x, y, BLOCK, BLOCK, 6, 6);
+        g.setColor(Color.black);
+        g.drawRoundRect(x, y, BLOCK, BLOCK, 6, 6);
+    }
+
+    private void drawShadow(Graphics2D g, int x, int y) {
+        g.setColor(new Color(0, 0, 0, 50));
+        g.fillRoundRect(x + 3, y + 3, BLOCK, BLOCK, 6, 6);
+    }
+
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g.setColor(Color.darkGray);
+        g2d.setColor(Color.darkGray);
         for (int x = 0; x <= COLS; x++)
-            g.drawLine(x * BLOCK, 0, x * BLOCK, ROWS * BLOCK);
+            g2d.drawLine(x * BLOCK, 0, x * BLOCK, ROWS * BLOCK);
         for (int y = 0; y <= ROWS; y++)
-            g.drawLine(0, y * BLOCK, COLS * BLOCK, y * BLOCK);
+            g2d.drawLine(0, y * BLOCK, COLS * BLOCK, y * BLOCK);
 
         for (int y = 0; y < ROWS; y++)
             for (int x = 0; x < COLS; x++)
                 if (board[y][x] > 0) {
-                    g.setColor(colors[board[y][x] - 1]);
-                    g.fillRect(x * BLOCK, y * BLOCK, BLOCK, BLOCK);
-                    g.setColor(Color.black);
-                    g.drawRect(x * BLOCK, y * BLOCK, BLOCK, BLOCK);
+                    int bx = x * BLOCK;
+                    int by = y * BLOCK;
+                    drawShadow(g2d, bx, by);
+                    drawBlock(g2d, bx, by, colors[board[y][x] - 1]);
                 }
 
-        g.setColor(colors[shapeType]);
         for (int i = 0; i < shape.length; i++)
             for (int j = 0; j < shape[0].length; j++)
                 if (shape[i][j] == 1) {
                     int px = (shapeX + j) * BLOCK;
                     int py = (shapeY + i) * BLOCK;
-                    g.fillRect(px, py, BLOCK, BLOCK);
-                    g.setColor(Color.black);
-                    g.drawRect(px, py, BLOCK, BLOCK);
-                    g.setColor(colors[shapeType]);
+                    drawShadow(g2d, px, py);
+                    drawBlock(g2d, px, py, colors[shapeType]);
                 }
 
-        g.setColor(Color.white);
-        g.setFont(font);
-        g.drawString("Score: " + score, COLS * BLOCK + 10, 30);
-        g.drawString("High Score:  " + Math.max(score, highScore), COLS * BLOCK + 10, 60);
-        g.drawString("Level: " + level, COLS * BLOCK + 10, 90);
+        g2d.setColor(Color.white);
+        g2d.setFont(font);
+        int textX = COLS * BLOCK + 10;
+        g2d.drawString("Score: " + score, textX, 30);
+        g2d.drawString("High Score: " + Math.max(score, highScore), textX, 60);
+        g2d.drawString("Level: " + level, textX, 90);
 
-        g.drawString("Next:", COLS * BLOCK + 10, 130);
+        g2d.drawString("Next:", textX, 130);
         for (int i = 0; i < nextShape.length; i++)
             for (int j = 0; j < nextShape[0].length; j++)
                 if (nextShape[i][j] == 1) {
-                    int px = COLS * BLOCK + 10 + j * BLOCK / 2;
+                    int px = textX + j * BLOCK / 2;
                     int py = 140 + i * BLOCK / 2;
-                    g.setColor(colors[nextType]);
-                    g.fillRect(px, py, BLOCK / 2, BLOCK / 2);
-                    g.setColor(Color.black);
-                    g.drawRect(px, py, BLOCK / 2, BLOCK / 2);
+                    g2d.setColor(colors[nextType]);
+                    g2d.fillRoundRect(px, py, BLOCK / 2, BLOCK / 2, 4, 4);
+                    g2d.setColor(Color.black);
+                    g2d.drawRoundRect(px, py, BLOCK / 2, BLOCK / 2, 4, 4);
                 }
 
-        g.drawString("Hold:", COLS * BLOCK + 10, 210);
+        g2d.drawString("Hold:", textX, 210);
         if (holdType != -1) {
             int[][] hs = shapes[holdType];
             for (int i = 0; i < hs.length; i++)
                 for (int j = 0; j < hs[0].length; j++)
                     if (hs[i][j] == 1) {
-                        int px = COLS * BLOCK + 10 + j * BLOCK / 2;
+                        int px = textX + j * BLOCK / 2;
                         int py = 220 + i * BLOCK / 2;
-                        g.setColor(colors[holdType]);
-                        g.fillRect(px, py, BLOCK / 2, BLOCK / 2);
-                        g.setColor(Color.black);
-                        g.drawRect(px, py, BLOCK / 2, BLOCK / 2);
+                        g2d.setColor(colors[holdType]);
+                        g2d.fillRoundRect(px, py, BLOCK / 2, BLOCK / 2, 4, 4);
+                        g2d.setColor(Color.black);
+                        g2d.drawRoundRect(px, py, BLOCK / 2, BLOCK / 2, 4, 4);
                     }
         }
+
+        g2d.setColor(Color.white);
+        g2d.drawRect(0, 0, COLS * BLOCK, ROWS * BLOCK);
     }
 
     public static void main(String[] args) {
@@ -269,35 +281,30 @@ public class Tetris extends JPanel implements ActionListener {
             settingsFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             settingsFrame.setSize(300, 200);
             settingsFrame.setLayout(new GridLayout(4, 1));
-    
-            // Width selection
+
             JPanel widthPanel = new JPanel();
             widthPanel.add(new JLabel("Select Board Width:"));
             String[] widths = { "10", "12", "15" };
             JComboBox<String> widthBox = new JComboBox<>(widths);
             widthPanel.add(widthBox);
-    
-            // Speed (difficulty) selection
+
             JPanel speedPanel = new JPanel();
             speedPanel.add(new JLabel("Select Difficulty:"));
-            String[] speeds = { "Easy (700)", "Medium (500)", "Hard (300)" };
+            String[] speeds = { "Easy", "Medium", "Hard" };
             JComboBox<String> speedBox = new JComboBox<>(speeds);
             speedPanel.add(speedBox);
-    
-            // Start button
+
             JButton startButton = new JButton("Start Game");
             startButton.addActionListener(e -> {
                 int cols = Integer.parseInt((String) widthBox.getSelectedItem());
-                int speed;
-                int multiplier;
-    
+                int speed, multiplier;
                 switch (speedBox.getSelectedIndex()) {
-                    case 0 -> { speed = 700; multiplier = 1; }  // Easy
-                    case 1 -> { speed = 500; multiplier = 2; }  // Medium
-                    case 2 -> { speed = 300; multiplier = 3; }  // Hard
+                    case 0 -> { speed = 700; multiplier = 1; }
+                    case 1 -> { speed = 500; multiplier = 2; }
+                    case 2 -> { speed = 300; multiplier = 3; }
                     default -> { speed = 500; multiplier = 2; }
                 }
-    
+
                 settingsFrame.dispose();
                 JFrame gameFrame = new JFrame("Tetris Pro");
                 gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -306,17 +313,13 @@ public class Tetris extends JPanel implements ActionListener {
                 gameFrame.setLocationRelativeTo(null);
                 gameFrame.setVisible(true);
             });
-    
+
             settingsFrame.add(widthPanel);
             settingsFrame.add(speedPanel);
-            settingsFrame.add(new JLabel()); // Spacer
+            settingsFrame.add(new JLabel());
             settingsFrame.add(startButton);
             settingsFrame.setLocationRelativeTo(null);
             settingsFrame.setVisible(true);
         });
     }
-    
-    }
-    
-    
-
+}
